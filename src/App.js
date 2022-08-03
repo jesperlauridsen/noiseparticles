@@ -1,25 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import simplexNoise from "simplex-noise";
+import { gsap } from "gsap";
+import lerp from "lerp";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ParticlesCanvas from './modules/particles-canvas';
+import CubeFlow from './modules/cube-flow';
+import CubeGrid from "./modules/cube-grid";
+import ReactParticles from './modules/react-particles'
+import ReactComponents from './modules/react-components';
+import StartPage from './modules/StartPage';
+import Layout from "./Layout";
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  <div>
+    <BrowserRouter>
+      <Routes>
+      <Route path="/" element={<Layout />}>
+          <Route index element={<StartPage />} />
+          <Route path="/particles-canvas" element={<ParticlesCanvas />} />
+          <Route path="/react-components" element={<ReactComponents />} />
+          <Route path="/cube-flow" element={<CubeFlow />} />
+          <Route path="/cube-grid" element={<CubeGrid />} />
+          <Route path="/react-particles" element={<ReactParticles />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  </div>
+  )
 }
-
-export default App;
