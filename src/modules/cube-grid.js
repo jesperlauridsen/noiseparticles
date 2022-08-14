@@ -16,7 +16,7 @@ const CubeGrid = () => {
   const mesh = useRef();
   const light = useRef();
   let xyz = 0;
-  let grid = [40,40,40];
+  let grid = [20,20,20];
   const DAMPING = 0.005;
   const scale = 0.1;
   const STEP = 5 * scale;
@@ -57,7 +57,6 @@ const CubeGrid = () => {
     // Generate some random positions, speed factors and timings
   let particles = useMemo(() => {
     const temp = [];
-    let grid = [20,20,20];
     for(let iO = 0; iO < grid[0]; iO++) {
       for(let xO = 0; xO < grid[1]; xO++) {
          for(let yO = 0;yO < grid[2]; yO++) {
