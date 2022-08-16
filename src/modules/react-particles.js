@@ -16,7 +16,7 @@ const RealParticles = () => {
   const mesh = useRef();
   const light = useRef();
   let xyz = 0;
-  let grid = [40,40,40];
+  let grid = [60,60,60];
   const DAMPING = 0.005;
   const scale = 1;
   const STEP = 1 * scale;
@@ -26,14 +26,12 @@ const RealParticles = () => {
   const simplexA = new SimplexNoise();
   const simplexB = new SimplexNoise();
 
-  const ROW = 20;
-  const COL = 20;
-  const NUM = ROW * COL;
-
   const ArrowRef = React.useRef();
   console.log(ArrowRef)
 
   const gridtest = grid[0] * grid[1] * grid[2];
+
+  console.log("particle number:", gridtest)
 
   const CameraController = () => {
     const { camera, gl } = useThree();
@@ -54,28 +52,27 @@ const RealParticles = () => {
   };
 
  const ParticleSystemTest = () => {
-  console.log("EE RUN REAYTA")
   const [coords, sizes, colors] = useMemo(() => {
     const initialCoords = [];
     const initialSizes = [];
     const initialColors = [];
-    let i = 0
-    for (let y = 0; y < ROW; y += 1) {
-      for (let x = 0; x < COL; x += 1) {
-        initialCoords.push(x);
-        initialCoords.push(y);
-        initialCoords.push(i);
-        initialSizes.push(Math.ceil(Math.random() * 15));
-        i++;
-        let newC = new THREE.Color("rgb(" + Math.floor(Math.random() * 50 + 100) + "," + Math.floor(Math.random() * 50 + 100) + "," + 255 + ")");
-        initialColors.push(newC.r, newC.g, newC.b);
+    for(let iO = 0; iO < grid[0]; iO++) {
+      for(let xO = 0; xO < grid[1]; xO++) {
+         for(let yO = 0;yO < grid[2]; yO++) {
+          initialCoords.push(Math.random() * 200 - 100);
+          initialCoords.push(Math.random() * 200 - 100);
+          initialCoords.push(Math.random() * 200 - 100);
+          initialSizes.push(Math.ceil(Math.random() * 15));
+          let newC = new THREE.Color("rgb(" + Math.floor(Math.random() * 50 + 100) + "," + Math.floor(Math.random() * 50 + 100) + "," + 255 + ")");
+          initialColors.push(newC.r, newC.g, newC.b);
+         }
       }
     }
 
     const coords = new Float32Array(initialCoords);
     const sizes = new Float32Array(initialSizes);
     const colors = new Float32Array(initialColors);
-    console.log(coords, sizes, colors)
+    //console.log(coords, sizes, colors)
     return [coords, sizes, colors]
   }, [])
 
@@ -89,7 +86,11 @@ const RealParticles = () => {
         "size",
         new THREE.Float32BufferAttribute(sizes, 1)
       );
-      console.log(bufgeom.current.attributes.position.array)
+      bufgeom.current.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(colors, 3)
+      );
+      //console.log(bufgeom.current.attributes.position.array)
     },
     []
   );
