@@ -65,7 +65,7 @@ const RealParticles = () => {
         initialCoords.push(x);
         initialCoords.push(y);
         initialCoords.push(i);
-        initialSizes.push(Math.random() < 0.03 ? 15 : 6);
+        initialSizes.push(Math.ceil(Math.random() * 15));
         i++;
         let newC = new THREE.Color("rgb(" + Math.floor(Math.random() * 50 + 100) + "," + Math.floor(Math.random() * 50 + 100) + "," + 255 + ")");
         initialColors.push(newC.r, newC.g, newC.b);
@@ -89,6 +89,7 @@ const RealParticles = () => {
         "size",
         new THREE.Float32BufferAttribute(sizes, 1)
       );
+      console.log(bufgeom.current.attributes.position.array)
     },
     []
   );
@@ -97,7 +98,15 @@ const RealParticles = () => {
   const bufgeom = useRef();
   useFrame((state) => {
     //geom.current.material.uniforms.time.value = state.clock.getElapsedTime();
-    geom.current.geometry.verticesNeedUpdate = true;
+    let pos = bufgeom.current.attributes.position.array;
+    pos.forEach((item, index) => {
+      //bufgeom.current.attributes.position.array[index] = bufgeom.current.attributes.position.array[index] + 0.1;
+    });
+
+    console.log()
+    //geom.current.geometry.verticesNeedUpdate = true;
+    bufgeom.current.attributes.position.needsUpdate = true;
+
   })
   return (
     <points ref={geom} position={[0, 0, 0]} /* rotation={[-Math.PI / 4, 0, Math.PI / 6]} */>
@@ -107,12 +116,11 @@ const RealParticles = () => {
 {/*         <bufferAttribute attachObject={["attributes", "color"]} count={colors.length} array={colors} />
  */}      </bufferGeometry>
       <pointsMaterial size={1}/>
-        {/* <shaderMaterial
+        <shaderMaterial
         attach='material'
         blending={THREE.AdditiveBlending}
         depthTest={false}
-      uniforms={uniforms}
-      //transparent: true,
+        //transparent: true,
       vertexColors={true}
       vertexShader={`
       attribute float size;
@@ -136,7 +144,7 @@ const RealParticles = () => {
         }
       `
     }
-    /> */}
+    />
     </points>
   )
  }
