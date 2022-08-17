@@ -16,15 +16,15 @@ const useEuclidean = (beats, length, rotate) => {
 	);
 };
 
-export default function Drum() {
+export default function Drum({ note, beat = 1, pulses = 12, offset = 0 }) {
 	const loop = useRef(new Tone.Loop());
 	// const src = useRef < Tone.Player > new Tone.Player(sample);
 
-	const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+	const synth = new Tone.MembraneSynth().toDestination();
 
-	const [beats, setBeats] = useState(1);
-	const [length, setLength] = useState(4);
-	const [rotate, setRotate] = useState(0);
+	const [beats, setBeats] = useState(beat);
+	const [length, setLength] = useState(pulses);
+	const [rotate, setRotate] = useState(offset);
 	const pattern = useEuclidean(beats, length, rotate);
 	const [drag, setDrag] = useState(0);
 
@@ -36,6 +36,7 @@ export default function Drum() {
 			if (pattern[pos % pattern.length]) {
 				const now = Tone.now();
 				console.log("yo tick");
+				synth.triggerAttackRelease(note, "8n");
 				// src.current.start(time + drag * 0.001);
 			}
 		},

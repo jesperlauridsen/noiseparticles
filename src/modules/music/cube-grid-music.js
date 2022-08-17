@@ -35,7 +35,10 @@ export default function MusicCube() {
 			<div style={divStyle}>
 				<button onClick={play}>Play</button>
 			</div>
-			<Drum></Drum>
+			<Drum note={"C3"} beat={6} pulses={12} offset={0}></Drum>
+			<Drum note={"F1"} beat={3} pulses={12} offset={2}></Drum>
+			<Drum note={"Bb4"} beat={1} pulses={3} offset={5}></Drum>
+
 			<Transport></Transport>
 		</>
 	);
