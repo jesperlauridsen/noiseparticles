@@ -5,5 +5,5 @@ import Layout from '../Layout'
 
 export default function StartPage() {
 
-  return <div id="welcome">React playground</div>
+  return <div id="welcome">React playground v2</div>
 }
