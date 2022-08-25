@@ -3,9 +3,9 @@ import { useSpring, animated, easings } from "@react-spring/three";
 import * as THREE from 'three';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Effects as EffectsComposer } from '@react-three/drei';
 import { extend, useThree } from '@react-three/fiber';
 import { UnrealBloomPass } from 'three-stdlib'
+import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
 import { gsap } from 'gsap';
 import SimplexNoise from 'simplex-noise';
 import { Vector3 } from "three";
@@ -13,15 +13,11 @@ import { Vector3 } from "three";
 extend({ UnrealBloomPass });
 
 const RealParticles = () => {
-  const mesh = useRef();
-  const light = useRef();
   let xyz = 0;
-  let grid = [60,60,60];
-  const DAMPING = 0.005;
-  const scale = 1;
+  const pN = 100000;
+  const scale = 2;
   const STEP = 1 * scale;
-  const tick = 0.1;
-  const FREQUENCY = 0.001 / scale;
+  const FREQUENCY = 0.003 / scale;
   const AMPLITUDE = 5;
   const simplexA = new SimplexNoise();
   const simplexB = new SimplexNoise();
@@ -29,9 +25,12 @@ const RealParticles = () => {
   const ArrowRef = React.useRef();
   console.log(ArrowRef)
 
-  const gridtest = grid[0] * grid[1] * grid[2];
+  const gridSize = 500;
 
-  console.log("particle number:", gridtest)
+
+  const particles = [];
+
+  console.log("particle number:", pN)
 
   const CameraController = () => {
     const { camera, gl } = useThree();
@@ -40,8 +39,9 @@ const RealParticles = () => {
         const controls = new OrbitControls(camera, gl.domElement);
         controls.minDistance = 1;
         controls.maxDistance = 500;
-        camera.position.set(0, 0, 20);
+        camera.position.set(0, 0, 500);
         camera.lookAt(new THREE.Vector3(0,0,0));
+        controls.target = new THREE.Vector3(0,0,0)
         return () => {
           controls.dispose();
         };
@@ -52,23 +52,30 @@ const RealParticles = () => {
   };
 
  const ParticleSystemTest = () => {
+
   const [coords, sizes, colors] = useMemo(() => {
     const initialCoords = [];
     const initialSizes = [];
     const initialColors = [];
-    for(let iO = 0; iO < grid[0]; iO++) {
-      for(let xO = 0; xO < grid[1]; xO++) {
-         for(let yO = 0;yO < grid[2]; yO++) {
-          initialCoords.push(Math.random() * 200 - 100);
-          initialCoords.push(Math.random() * 200 - 100);
-          initialCoords.push(Math.random() * 200 - 100);
-          initialSizes.push(Math.ceil(Math.random() * 15));
+    for(let c = 0; c < pN; c++) {
+          initialCoords.push(Math.random() * gridSize - gridSize/2);
+          initialCoords.push(Math.random() * gridSize - gridSize/2);
+          initialCoords.push(Math.random() * gridSize - gridSize/2);
+          let newSize = Math.floor(Math.random() * 15 + 5)
+          initialSizes.push(Math.floor(Math.random() * 15 + 5));
           let newC = new THREE.Color("rgb(" + Math.floor(Math.random() * 50 + 100) + "," + Math.floor(Math.random() * 50 + 100) + "," + 255 + ")");
           initialColors.push(newC.r, newC.g, newC.b);
-         }
-      }
+          const obj = {
+            time: Math.floor(Math.random() * 100000),
+            speed: 2,//Math.random() * 10,
+            aAngle: Math.random() * 360,
+            bAngle: Math.random() * 360,
+            decay:Math.random() * 500 + 500,
+            newborn:false,
+            newBornSize: newSize,
+          };
+          particles.push(obj);
     }
-
     const coords = new Float32Array(initialCoords);
     const sizes = new Float32Array(initialSizes);
     const colors = new Float32Array(initialColors);
@@ -95,27 +102,63 @@ const RealParticles = () => {
     []
   );
 
+  const pointZero = new THREE.Vector3(0,0,0);
   const geom = useRef();
   const bufgeom = useRef();
   useFrame((state) => {
     //geom.current.material.uniforms.time.value = state.clock.getElapsedTime();
-    let pos = bufgeom.current.attributes.position.array;
-    pos.forEach((item, index) => {
-      //bufgeom.current.attributes.position.array[index] = bufgeom.current.attributes.position.array[index] + 0.1;
-    });
+    let position = bufgeom.current.attributes.position.array;
+    let size = bufgeom.current.attributes.size.array;
+    particles.forEach((item, index) => {
+        /* position[index] = position[index] + Math.random() - 0.5;
+        position[index + 1] = position[index + 1] + Math.random() - 0.5;
+        position[index + 2] = position[index + 2] + Math.random() - 0.5; */
+          particles[index].aAngle = simplexA.noise3D(position[index * 3] * FREQUENCY, position[index * 3 + 1] * FREQUENCY, xyz/100) * AMPLITUDE * particles[index].speed;
+          particles[index].bAngle = simplexB.noise3D(position[index * 3 + 1] * FREQUENCY, position[index  * 3 + 2] * FREQUENCY, xyz/100) * AMPLITUDE * particles[index].speed;
+        
+          position[index * 3] += Math.cos(particles[index].aAngle) * Math.cos(particles[index].bAngle) * STEP;
+          position[index * 3 + 1] += Math.sin(particles[index].aAngle) * Math.cos(particles[index].bAngle) * STEP;
+          position[index  * 3 + 2] += Math.sin(particles[index].bAngle) * STEP;
+          particles[index].decay -= Math.random() * 5;
+          if(particles[index].newborn === true) {
+            size[index] += 1;
+            if(size[index] > particles[index].newBornSize) {
+              particles[index].newborn = false;
+            }
+          }
+          else {
+            if(particles[index].decay < 20)
+            size[index] -= 1;
+          }
+          const test = new THREE.Vector3(position[index * 3], position[index * 3 + 1], position[index  * 3 + 2]);
+        /* if(test.distanceTo(pointZero) > gridSize) {
+          position[index * 3] = Math.random() * gridSize - gridSize/2;
+          position[index * 3 + 1] = Math.random() * gridSize - gridSize/2;
+          position[index  * 3 + 2] = Math.random() * gridSize - gridSize/2;
 
-    console.log()
+        } */
+        if(size[index] < 0) {
+          position[index * 3] = Math.random() * gridSize - gridSize/2;
+          position[index * 3 + 1] = Math.random() * gridSize - gridSize/2;
+          position[index  * 3 + 2] = Math.random() * gridSize - gridSize/2;
+          particles[index].newborn = true;
+          particles[index].decay = Math.random() * 500 + 500;
+        }
+      //<bufgeom.current.attributes.size.array[index] = bufgeom.current.attributes.size.array[index] + (Math.random() - 0.5);
+    });
     //geom.current.geometry.verticesNeedUpdate = true;
     bufgeom.current.attributes.position.needsUpdate = true;
+    bufgeom.current.attributes.size.needsUpdate = true;
 
+    xyz = xyz + 0.05;
   })
   return (
     <points ref={geom} position={[0, 0, 0]} /* rotation={[-Math.PI / 4, 0, Math.PI / 6]} */>
       <bufferGeometry ref={bufgeom} attach="geometry">
         <bufferAttribute attachObject={["attributes", "position"]} count={coords.length / 3} array={coords}/>
         <bufferAttribute attachObject={["attributes", "size"]} count={sizes.length} array={sizes} />
-{/*         <bufferAttribute attachObject={["attributes", "color"]} count={colors.length} array={colors} />
- */}      </bufferGeometry>
+        <bufferAttribute attachObject={["attributes", "color"]} count={colors.length} array={colors} />
+      </bufferGeometry>
       <pointsMaterial size={1}/>
         <shaderMaterial
         attach='material'
@@ -155,12 +198,30 @@ const RealParticles = () => {
     height:"100vh",
   }
 
+  const Effects = () => {
+    
+    const height = 1500;
+    const width = 1500;
+
+    return (
+      <EffectComposer autoclear={false}>
+        {/* <renderPass attachArray="passes" scene={scene} camera={camera} /> */}
+        {/*<unrealBloomPass attachArray="passes" radius={0.5} strength={0.8} args={[aspect, 0.4, 1, 0]} /> */}
+        {/* <Noise opacity={0.5} /> */}
+        {/* <DepthOfField focusDistance={200} focalLength={0.1} bokehScale={2} height={1500} width={1500} /> */}
+        {/* <unrealBloomPass attachArray="passes" radius={0.5} strength={0.8} args={[new THREE.Vector2(width, height), 0.4, 1, 0]} /> */}        <Bloom intensity={0.5} luminanceThreshold={0.2} luminanceSmoothing={1} width={1500} height={1500} />
+      </EffectComposer>
+    )
+  }
+
   return (
     <Canvas style={divStyle} dpr={window.devicePixelRatio}>
       <CameraController />
       <arrowHelper/>
       <ParticleSystemTest />
+      <Effects />
     </Canvas>
+    
   );
 }
 
