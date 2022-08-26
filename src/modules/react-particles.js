@@ -14,7 +14,7 @@ extend({ UnrealBloomPass });
 
 const RealParticles = () => {
   let xyz = 0;
-  const pN = 100000;
+  const pN = 60000;
   const scale = 2;
   const STEP = 1 * scale;
   const FREQUENCY = 0.003 / scale;
