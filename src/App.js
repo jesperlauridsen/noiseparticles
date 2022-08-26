@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import simplexNoise from "simplex-noise";
 import { gsap } from "gsap";
-import lerp from "lerp";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ParticlesCanvas from './modules/particles-canvas';
 import CubeFlow from './modules/cube-flow';
