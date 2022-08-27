@@ -21,14 +21,15 @@ const RealParticles = () => {
   const AMPLITUDE = 5;
   const simplexA = new SimplexNoise();
   const simplexB = new SimplexNoise();
-
+  let controls;
   const ArrowRef = React.useRef();
   console.log(ArrowRef)
 
   const gridSize = 500;
 
-
   const particles = [];
+	
+  let Raytracing;
 
   console.log("particle number:", pN)
 
@@ -36,12 +37,16 @@ const RealParticles = () => {
     const { camera, gl } = useThree();
     useEffect(
       () => {
-        const controls = new OrbitControls(camera, gl.domElement);
+        controls = new OrbitControls(camera, gl.domElement);
         controls.minDistance = 1;
         controls.maxDistance = 500;
         camera.position.set(0, 0, 500);
         camera.lookAt(new THREE.Vector3(0,0,0));
         controls.target = new THREE.Vector3(0,0,0)
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 2.5;
         return () => {
           controls.dispose();
         };
@@ -52,7 +57,6 @@ const RealParticles = () => {
   };
 
  const ParticleSystemTest = () => {
-
   const [coords, sizes, colors] = useMemo(() => {
     const initialCoords = [];
     const initialSizes = [];
@@ -70,7 +74,7 @@ const RealParticles = () => {
             speed: 2,//Math.random() * 10,
             aAngle: Math.random() * 360,
             bAngle: Math.random() * 360,
-            decay:Math.random() * 500 + 500,
+            decay:Math.random() * 1000,
             newborn:false,
             newBornSize: newSize,
           };
@@ -106,9 +110,12 @@ const RealParticles = () => {
   const geom = useRef();
   const bufgeom = useRef();
   useFrame((state) => {
+    controls.update();
     //geom.current.material.uniforms.time.value = state.clock.getElapsedTime();
     let position = bufgeom.current.attributes.position.array;
     let size = bufgeom.current.attributes.size.array;
+    let color = bufgeom.current.attributes.color.array;
+
     particles.forEach((item, index) => {
         /* position[index] = position[index] + Math.random() - 0.5;
         position[index + 1] = position[index + 1] + Math.random() - 0.5;
@@ -119,7 +126,19 @@ const RealParticles = () => {
           position[index * 3] += Math.cos(particles[index].aAngle) * Math.cos(particles[index].bAngle) * STEP;
           position[index * 3 + 1] += Math.sin(particles[index].aAngle) * Math.cos(particles[index].bAngle) * STEP;
           position[index  * 3 + 2] += Math.sin(particles[index].bAngle) * STEP;
+          
+          let newC = new THREE.Vector3(Math.cos(particles[index].aAngle) * Math.cos(particles[index].bAngle),
+          Math.sin(particles[index].aAngle) * Math.cos(particles[index].bAngle),
+          Math.sin(particles[index].bAngle)
+          ).normalize()
+/*           color[index * 3] = newC.x / 5;
+          color[index * 3 + 1] = newC.y / 5;
+          color[index * 3 + 2] = newC.z / 5; */
+
           particles[index].decay -= Math.random() * 5;
+          if(index === 0) {
+            //console.log(colz.x);
+          }
           if(particles[index].newborn === true) {
             size[index] += 1;
             if(size[index] > particles[index].newBornSize) {
@@ -130,7 +149,15 @@ const RealParticles = () => {
             if(particles[index].decay < 20)
             size[index] -= 1;
           }
-          const test = new THREE.Vector3(position[index * 3], position[index * 3 + 1], position[index  * 3 + 2]);
+          if(Raytracing) {
+            if(Raytracing.distanceTo(new THREE.Vector3(position[index * 3], position[index * 3 + 1], position[index  * 3 + 2])) < 20) {
+              size[index] = 50;
+            }
+            else {
+              //size[index] = particles[index].newBornSize;
+            }
+          }
+          //const test = new THREE.Vector3(position[index * 3], position[index * 3 + 1], position[index  * 3 + 2]);
         /* if(test.distanceTo(pointZero) > gridSize) {
           position[index * 3] = Math.random() * gridSize - gridSize/2;
           position[index * 3 + 1] = Math.random() * gridSize - gridSize/2;
@@ -149,11 +176,18 @@ const RealParticles = () => {
     //geom.current.geometry.verticesNeedUpdate = true;
     bufgeom.current.attributes.position.needsUpdate = true;
     bufgeom.current.attributes.size.needsUpdate = true;
+    bufgeom.current.attributes.color.needsUpdate = true;
+
 
     xyz = xyz + 0.05;
   })
+
+/*    const onPointerOver = (e) => {
+    Raytracing = (e.point)
+  } */
+
   return (
-    <points ref={geom} position={[0, 0, 0]} /* rotation={[-Math.PI / 4, 0, Math.PI / 6]} */>
+    <points /* onPointerOver={onPointerOver} */ ref={geom} position={[0, 0, 0]} /* rotation={[-Math.PI / 4, 0, Math.PI / 6]} */>
       <bufferGeometry ref={bufgeom} attach="geometry">
         <bufferAttribute attachObject={["attributes", "position"]} count={coords.length / 3} array={coords}/>
         <bufferAttribute attachObject={["attributes", "size"]} count={sizes.length} array={sizes} />
@@ -198,6 +232,18 @@ const RealParticles = () => {
     height:"100vh",
   }
 
+  const styles = {
+    width:"100vw",
+    height:"100vh",
+    position:"absolute",
+    zIndex:"-1",
+    top:"0px",
+    left:"0px",
+    mixBlendMode: "color",
+    PointerEvent:"none",
+    //backgroundImage: "linear-gradient(to right top, #d16ba5, #c777b9, #ba83ca, #aa8fd8, #9a9ae1, #8aa7ec, #79b3f4, #69bff8, #52cffe, #41dfff, #46eefa, #5ffbf1)",
+  }
+
   const Effects = () => {
     
     const height = 1500;
@@ -215,13 +261,15 @@ const RealParticles = () => {
   }
 
   return (
+    <>
     <Canvas style={divStyle} dpr={window.devicePixelRatio}>
       <CameraController />
-      <arrowHelper/>
-      <ParticleSystemTest />
+{/*       <arrowHelper/>
+ */}      <ParticleSystemTest />
       <Effects />
     </Canvas>
-    
+    <div style={styles}></div>
+    </>
   );
 }
 
