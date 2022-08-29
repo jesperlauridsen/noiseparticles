@@ -2,10 +2,10 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useSpring, animated, easings } from "@react-spring/three";
 import * as THREE from 'three';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useContext } from 'react';
 import { extend, useThree } from '@react-three/fiber';
 import { UnrealBloomPass } from 'three-stdlib'
-import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing'
 import { gsap } from 'gsap';
 import SimplexNoise from 'simplex-noise';
 import { Vector3 } from "three";
@@ -13,18 +13,22 @@ import { Vector3 } from "three";
 extend({ UnrealBloomPass });
 
 const RealParticles = () => {
+  const [STEP, setSTEP] = useState(2);
+  const [FREQUENCY, setFREQUENCY] = useState(0.0015);
+  const [AMPLITUDE, setAMPLITUDE] = useState(5);
+
   let xyz = 0;
   const pN = 60000;
-  const scale = 2;
-  const STEP = 1 * scale;
-  const FREQUENCY = 0.003 / scale;
-  const AMPLITUDE = 5;
+/*   let STEP = 2;
+  let FREQUENCY = 0.0015;
+  let AMPLITUDE = 5; */
   const simplexA = new SimplexNoise();
   const simplexB = new SimplexNoise();
   let controls;
   const ArrowRef = React.useRef();
   console.log(ArrowRef)
 
+  const maxDecay = 1000;
   const gridSize = 500;
 
   const particles = [];
@@ -32,6 +36,24 @@ const RealParticles = () => {
   let Raytracing;
 
   console.log("particle number:", pN)
+
+/*   const DisplayControls = () => {
+    return (<div id="controlsDiv">
+      <label>STEP</label><input type="range" min="0" max="5" step="0.01" value={STEP} className="slider" onChange={ e => setSliderStep(e.target.value)} id="myRange"></input>
+      <label>FREQUENCY</label><input type="range" min="0" max="2" step="0.001" value={FREQUENCY} className="slider" onChange={ e => setSliderFrequency(e.target.value)} id="myRange"></input>
+      <label>AMPLITUDE</label><input type="range" min="0" max="20" step="0.1" value={AMPLITUDE} className="slider" onChange={ e => setSliderAmplitude(e.target.value)} id="myRange"></input>
+    </div>)
+  } */
+
+  const setSliderStep = (n) => {
+    setSTEP(n);
+  }
+  const setSliderFrequency = (n) => {
+    setFREQUENCY(n);
+  }
+  const setSliderAmplitude = (n) => {
+    setAMPLITUDE(n);
+  }
 
   const CameraController = () => {
     const { camera, gl } = useThree();
@@ -74,7 +96,7 @@ const RealParticles = () => {
             speed: 2,//Math.random() * 10,
             aAngle: Math.random() * 360,
             bAngle: Math.random() * 360,
-            decay:Math.random() * 1000,
+            decay:Math.random() * maxDecay,
             newborn:false,
             newBornSize: newSize,
           };
@@ -131,9 +153,9 @@ const RealParticles = () => {
           Math.sin(particles[index].aAngle) * Math.cos(particles[index].bAngle),
           Math.sin(particles[index].bAngle)
           ).normalize()
-/*           color[index * 3] = newC.x / 5;
+           color[index * 3] = newC.x / 5;
           color[index * 3 + 1] = newC.y / 5;
-          color[index * 3 + 2] = newC.z / 5; */
+          color[index * 3 + 2] = newC.z / 5;
 
           particles[index].decay -= Math.random() * 5;
           if(index === 0) {
@@ -149,14 +171,18 @@ const RealParticles = () => {
             if(particles[index].decay < 20)
             size[index] -= 1;
           }
-          if(Raytracing) {
+          /* if(Raytracing) {
             if(Raytracing.distanceTo(new THREE.Vector3(position[index * 3], position[index * 3 + 1], position[index  * 3 + 2])) < 20) {
-              size[index] = 50;
+              if(size[index] < 50) {
+                size[index] += 5;
+              }
             }
             else {
-              //size[index] = particles[index].newBornSize;
+              if(size[index] > particles[index].newBornSize) {
+                size[index] -= 1;
+              }
             }
-          }
+          } */
           //const test = new THREE.Vector3(position[index * 3], position[index * 3 + 1], position[index  * 3 + 2]);
         /* if(test.distanceTo(pointZero) > gridSize) {
           position[index * 3] = Math.random() * gridSize - gridSize/2;
@@ -169,7 +195,7 @@ const RealParticles = () => {
           position[index * 3 + 1] = Math.random() * gridSize - gridSize/2;
           position[index  * 3 + 2] = Math.random() * gridSize - gridSize/2;
           particles[index].newborn = true;
-          particles[index].decay = Math.random() * 500 + 500;
+          particles[index].decay = Math.random() * maxDecay/2 + maxDecay/2;
         }
       //<bufgeom.current.attributes.size.array[index] = bufgeom.current.attributes.size.array[index] + (Math.random() - 0.5);
     });
@@ -181,10 +207,10 @@ const RealParticles = () => {
 
     xyz = xyz + 0.05;
   })
-
-/*    const onPointerOver = (e) => {
+  
+  const onPointerOver = (e) => {
     Raytracing = (e.point)
-  } */
+  }
 
   return (
     <points /* onPointerOver={onPointerOver} */ ref={geom} position={[0, 0, 0]} /* rotation={[-Math.PI / 4, 0, Math.PI / 6]} */>
@@ -241,7 +267,7 @@ const RealParticles = () => {
     left:"0px",
     mixBlendMode: "color",
     PointerEvent:"none",
-    //backgroundImage: "linear-gradient(to right top, #d16ba5, #c777b9, #ba83ca, #aa8fd8, #9a9ae1, #8aa7ec, #79b3f4, #69bff8, #52cffe, #41dfff, #46eefa, #5ffbf1)",
+    backgroundImage: "linear-gradient(to right top, #d16ba5, #c777b9, #ba83ca, #aa8fd8, #9a9ae1, #8aa7ec, #79b3f4, #69bff8, #52cffe, #41dfff, #46eefa, #5ffbf1)",
   }
 
   const Effects = () => {
@@ -254,8 +280,9 @@ const RealParticles = () => {
         {/* <renderPass attachArray="passes" scene={scene} camera={camera} /> */}
         {/*<unrealBloomPass attachArray="passes" radius={0.5} strength={0.8} args={[aspect, 0.4, 1, 0]} /> */}
         {/* <Noise opacity={0.5} /> */}
-        {/* <DepthOfField focusDistance={200} focalLength={0.1} bokehScale={2} height={1500} width={1500} /> */}
-        {/* <unrealBloomPass attachArray="passes" radius={0.5} strength={0.8} args={[new THREE.Vector2(width, height), 0.4, 1, 0]} /> */}        <Bloom intensity={0.5} luminanceThreshold={0.2} luminanceSmoothing={1} width={1500} height={1500} />
+        <DepthOfField focusDistance={100} focalLength={500} bokehScale={5}/>
+        {/* <unrealBloomPass attachArray="passes" radius={0.5} strength={0.8} args={[new THREE.Vector2(width, height), 0.4, 1, 0]} /> */}
+        <Bloom intensity={0.5} luminanceThreshold={0.2} luminanceSmoothing={1} />
       </EffectComposer>
     )
   }
@@ -269,7 +296,8 @@ const RealParticles = () => {
       <Effects />
     </Canvas>
     <div style={styles}></div>
-    </>
+{/*     <DisplayControls />
+ */}    </>
   );
 }
 

@@ -56,3 +56,10 @@ canvas {
   -webkit-text-stroke-color: white;
   font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
+
+#controlsDiv {
+  position:absolute;
+  right:0px;
+  top:0px;
+  color:white;
+}

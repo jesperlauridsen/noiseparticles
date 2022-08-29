@@ -4,6 +4,6 @@ import simplexNoise from "simplex-noise";
 import Layout from '../Layout'
 
 export default function StartPage() {
-
+  console.log("We're live!")
   return <div id="welcome">React playground v2</div>
 }
